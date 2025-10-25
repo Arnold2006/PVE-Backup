@@ -1,87 +1,84 @@
-Proxmox Backup Automation Script
+# PVE Backup — Proxmox Backup Automation Script
 
-This script automates backups of critical directories on a Proxmox VE host using Proxmox Backup Server (PBS). It is designed to run from cron and keeps the last 3 backups while logging all operations.
+A small, cron-friendly script to automate backing up critical configuration and home data from a Proxmox VE host to a Proxmox Backup Server (PBS). The script creates .pxar archives, uploads them to a PBS datastore, keeps the latest 3 backups, and logs all operations.
 
-#Features:
+## Table of contents
+- [Features](#features)
+- [Requirements](#requirements)
+- [Configuration](#configuration)
+- [How it works](#how-it-works)
+- [Usage](#usage)
+- [Example directory / file structure](#example-directory--file-structure)
+- [Notes & best practices](#notes--best-practices)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
 
-Back up /etc, /etc/pve, and /root into .pxar archives
+## Features
+- Back up /etc, /etc/pve and /root into .pxar archives
+- Authenticate securely with PBS API token
+- Upload backups to a specified PBS datastore
+- Automatically prune older backups (keep last 3)
+- Log all actions to a logfile for auditing and monitoring
+- Designed for unattended operation (cron compatible)
 
-Authenticate securely using a PBS API token
+## Requirements
+- Proxmox VE host with access to PBS
+- Proxmox Backup Server reachable from the VE host
+- PBS API token with appropriate permissions (DatastoreBackup or DatastoreAdmin)
+- pbs-client utilities (or whichever tools your script uses to create/upload .pxar archives)
+- Bash (the script is written for a POSIX shell environment)
 
-Automatically prune older backups, keeping only the last 3
+## Configuration variables
+Set these variables in the script (or export them from a secure environment) before running:
 
-Logs all actions and results to /var/log/proxmox-backup.log
+- TOKEN_USER — PBS API token identifier, e.g. `root@pam!cronbackup`
+- TOKEN_SECRET — API token secret, e.g. `12345678-9abc-def0-1234-56789abcdef0` (consider storing this in a separate file with restricted permissions)
+- REPO_SERVER — PBS address and datastore, e.g. `192.168.1.15:Datastore1`
+- BACKUP_NAME — Prefix used for backup files, e.g. `pve`
+- LOGFILE — Log path, e.g. `/var/log/proxmox-backup.log`
 
-Fully cron-compatible for unattended operation
+## How it works
+1. The script places the API token secret where PBS client tools can read it for authentication.
+2. Creates .pxar archives of:
+   - /etc
+   - /etc/pve
+   - /root
+3. Uploads each backup to the configured PBS datastore.
+4. Prunes older backups on the datastore, keeping only the last 3 per backup name.
+5. Logs all operations (start, success/failure, prune results) to the logfile.
 
-Configuration Variables
+## Usage
+1. Make the script executable:
+   chmod +x /usr/local/sbin/proxmox-backup.sh
 
-TOKEN_USER: PBS API token identifier, e.g., root@pam!cronbackup
+2. Run manually to test:
+   /usr/local/sbin/proxmox-backup.sh
 
-TOKEN_SECRET: Secret key for the token, e.g., 12345678-9abc-def0-1234-56789abcdef0
+3. Add to root's crontab for daily backups at 03:00:
+   0 3 * * * /usr/local/sbin/proxmox-backup.sh
 
-REPO_SERVER: PBS address and datastore, e.g., 192.168.1.15:Datastore1
+Adjust schedule as needed.
 
-BACKUP_NAME: Prefix used for backup files, e.g., pve
+## Example directory and backup file structure
+- /var/log/proxmox-backup.log — Script log file
+- /backups/ (local staging or example folder)
+  - pve-etc.pxar — Current backup for /etc
+  - pve-root.pxar — Current backup for /root
+  - pve-etc-<timestamp>.pxar — Historical backups (managed and pruned by script)
 
-LOGFILE: Path to the log file, e.g., /var/log/proxmox-backup.log
+Backups are stored on the PBS datastore as .pxar and pruned to the last 3 versions by the script.
 
-How It Works
+## Notes & best practices
+- Ensure the API token has only the permissions it needs (least privilege).
+- For better security, store TOKEN_SECRET in a root-only readable file instead of embedding it in the script.
+- Monitor /var/log/proxmox-backup.log and configure logrotate if necessary.
+- Test restores occasionally to ensure backups are valid.
 
-Sets the API token secret for authentication with PBS
+## Troubleshooting
+- Authentication failures: verify TOKEN_USER and TOKEN_SECRET and token permissions.
+- Connectivity issues: confirm the VE host can reach the PBS address and port.
+- Upload failures: check available disk space and network stability.
+- If script exits unexpectedly, consult the logfile for detailed error messages.
 
-Creates .pxar backups of important directories (/etc, /etc/pve, /root)
-
-Uploads the backups to the specified PBS datastore
-
-Prunes older backups, keeping only the latest 3
-
-Logs all output, including success or failure, for monitoring
-
-Directory and Backup File Structure Example
-
-/var/log/proxmox-backup.log → Script log file
-/backups/
-
-pve-etc.pxar → Backup of /etc
-
-pve-root.pxar → Backup of /root
-
-pve-etc.pxar_<timestamp>.pxar → Historical backups (managed by prune)
-
-Usage
-
-Make the script executable: chmod +x /usr/local/sbin/proxmox-backup.sh
-
-Run manually to test: /usr/local/sbin/proxmox-backup.sh
-
-Add a cron job for automated backups (daily at 3 AM):
-0 3 * * * /usr/local/sbin/proxmox-backup.sh
-
-Notes & Best Practices
-
-Ensure the API token has sufficient privileges on the PBS datastore (DatastoreAdmin or DatastoreBackup)
-
-Adjust BACKUP_NAME to match your naming convention
-
-Review logs in /var/log/proxmox-backup.log for any errors
-
-For enhanced security, you can store the token secret in a separate file instead of embedding it in the script
-
-Diagram (Overview)
-
-Proxmox VE Host → Proxmox Backup Server
-
-/etc → Backup to Datastore1
-
-/etc/pve → Backup to Datastore1
-
-/root → Backup to Datastore1
-
-Backup Script (cron-enabled) manages backups and pruning
-
-Backups stored as .pxar files, pruned to last 3
-
-License
-
-This script is provided as-is. You may use, modify, and distribute it freely.
+## License
+Provided as-is. You may use, modify, and distribute this script freely. No warranty expressed or implied.
