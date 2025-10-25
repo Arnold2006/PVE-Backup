@@ -2,7 +2,7 @@ Proxmox Backup Automation Script
 
 This script automates backups of critical directories on a Proxmox VE host using Proxmox Backup Server (PBS). It is designed to run from cron and keeps the last 3 backups while logging all operations.
 
-"Features:
+#Features:
 
 Back up /etc, /etc/pve, and /root into .pxar archives
 
