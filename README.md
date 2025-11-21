@@ -1,4 +1,4 @@
-# PVE Backup — Proxmox Backup Automation Script
+# PVE Backup — Proxmox Backup / Restore Automation Scripts
 
 A small, cron-friendly script to automate backing up critical configuration and home data from a Proxmox VE host to a Proxmox Backup Server (PBS). The script creates .pxar archives, uploads them to a PBS datastore, keeps the latest 3 backups, and logs all operations.
 
