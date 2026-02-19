@@ -31,8 +31,8 @@
 
 # -- CONFIG --------------------------------------------------------------------
 
-PBS_HOST="192.168.1.15"           # IP or hostname of your PBS server
-PBS_DATASTORE="Backup1"           # Datastore name on PBS
+PBS_HOST="192.168.1.xx"           # IP or hostname of your PBS server
+PBS_DATASTORE="Datastore"           # Datastore name on PBS
 PBS_TOKENID="root@pam!Backup"     # API token ID
 PBS_TOKEN_SECRET="your-token-secret-here"  # API token secret
 PBS_FINGERPRINT="your-pbs-fingerprint-here"  # PBS TLS fingerprint
