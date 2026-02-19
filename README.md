@@ -113,8 +113,8 @@ echo "0 2 * * * root /usr/local/bin/pve-backup.sh" > /etc/cron.d/pve-backup
 Edit the CONFIG section at the top of `pve-restore.sh`:
 
 ```bash
-PBS_HOST="192.168.1.15"
-PBS_DATASTORE="Backup1"
+PBS_HOST="192.168.1.xx"
+PBS_DATASTORE="Datastore"
 PBS_TOKENID="root@pam!Backup"
 PBS_TOKEN_SECRET="your-token-secret-here"
 PBS_FINGERPRINT="your-pbs-fingerprint-here"
