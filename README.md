@@ -16,6 +16,7 @@ I sat down with Claude (Anthropic's AI assistant) and we worked through it syste
 - The `proxmox-backup-client list` command returning `last-backup` as a unix timestamp rather than the formatted date string the restore command expects
 - LVM detection failing because the PERC H730 presents the RAID array as a whole disk PV (no partition), which broke the `lsblk PKNAME` lookup
 - NIC names changing from `eno1`/`eno2` to `nic0`/`nic1` on the new server, taking down networking after the first restore
+- The `prune` command requiring the backup group as a positional argument (`host/pve-host-config`) rather than separate `--backup-type` and `--backup-id` flags
 
 Each time something broke we diagnosed it, fixed it, and moved on. By the end we had scripts that had been proven in a real migration — not just tested in theory.
 
@@ -40,6 +41,20 @@ The result is what you're looking at now. Two scripts that handle the full backu
 **What does NOT get backed up:**
 - The OS disk itself — you reinstall PVE fresh on the new drive
 - VM disk contents — handle those with PVE's built-in backup jobs to PBS
+
+---
+
+## Retention policy
+
+The backup script automatically prunes old snapshots after each run using the following policy:
+
+| Rule | Value |
+|------|-------|
+| Keep last | 7 snapshots |
+| Keep weekly | 4 snapshots |
+| Keep monthly | 3 snapshots |
+
+Since host config backups are tiny (a few MB), this gives a comfortable history without using meaningful space on the PBS datastore. The values can be changed in the CONFIG section at the top of `pve-backup.sh`.
 
 ---
 
@@ -90,6 +105,10 @@ PBS_TOKENID="root@pam!your-token"
 PBS_TOKEN_SECRET="your-token-secret-here"
 PBS_FINGERPRINT="your-pbs-fingerprint-here"
 PBS_NAMESPACE=""
+
+KEEP_LAST=7
+KEEP_WEEKLY=4
+KEEP_MONTHLY=3
 ```
 
 ### 4. Install and test
@@ -215,9 +234,14 @@ README.md        -- this file
 
 ## Known quirks of proxmox-backup-client
 
-Documented here because they cost time to figure out and aren't obvious from the documentation:
+Documented here because they cost time to figure out and are not obvious from the documentation:
 
 - **Token authentication** — even when using an API token, the client reads the secret from the `PBS_PASSWORD` environment variable, not `PBS_TOKEN_SECRET`. Set `export PBS_PASSWORD="your-token-secret"`.
+
 - **TLS fingerprint** — if the PBS server uses a self-signed certificate and `PBS_FINGERPRINT` is not set, the client will prompt interactively and hang in a script. Always set `export PBS_FINGERPRINT`.
+
 - **Snapshot timestamps** — `proxmox-backup-client list --output-format json` returns `last-backup` as a unix timestamp. The restore command expects the snapshot in `YYYY-MM-DDTHH:MM:SSZ` format. Convert with `datetime.utcfromtimestamp(ts).strftime(...)` in Python.
+
+- **Prune group argument** — `proxmox-backup-client prune` requires the backup group as a single positional argument in `type/id` format (e.g. `host/pve-host-config`). Unlike the `backup` command which takes `--backup-type` and `--backup-id` as separate flags, `prune` will error with `missing argument` if you use that approach.
+
 - **Line endings** — if the script was downloaded or edited on Windows, CRLF line endings will break the shebang line with `cannot execute: required file not found`. Fix with `sed -i 's/\r//' pve-backup.sh`.
