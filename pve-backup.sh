@@ -13,8 +13,13 @@
 #    - Package list and system information
 #
 #  What does NOT get backed up:
-#    - The OS disk  (reinstall PVE fresh on the new drive)
-#    - VM disk contents  (handled by your existing PVE backup jobs in the UI)
+#    - The OS disk itself  (reinstall PVE fresh on the new drive)
+#    - VM disk contents    (handled by your existing PVE backup jobs in the UI)
+#
+#  Retention policy:
+#    - Keep last 7 snapshots
+#    - Keep 4 weekly snapshots
+#    - Keep 3 monthly snapshots
 #
 #  INSTALL:
 #    1. Fill in the CONFIG section below
@@ -31,11 +36,11 @@
 
 # -- CONFIG --------------------------------------------------------------------
 
-PBS_HOST="192.168.1.xx"           # IP or hostname of your PBS server
-PBS_DATASTORE="Datastore"           # Datastore name on PBS
+PBS_HOST="192.168.1.15"           # IP or hostname of your PBS server
+PBS_DATASTORE="Backup1"           # Datastore name on PBS
 PBS_TOKENID="root@pam!Backup"     # API token ID
-PBS_TOKEN_SECRET="your-token-secret-here"  # API token secret
-PBS_FINGERPRINT="your-pbs-fingerprint-here"  # PBS TLS fingerprint
+PBS_TOKEN_SECRET="74e728a9-381c-4baa-bd75-26001893bbd0"  # API token secret
+PBS_FINGERPRINT="2e:e5:71:a1:89:a4:2c:94:99:2f:8a:ff:2b:37:85:6e:64:ee:33:a8:41:e0:18:48:42:53:bd:e9:bf:05:ba:3f"  # PBS TLS fingerprint
 #
 # To get your PBS fingerprint, run this on your PBS server:
 #   openssl s_client -connect <pbs-ip>:8007 2>/dev/null | \
@@ -44,6 +49,11 @@ PBS_FINGERPRINT="your-pbs-fingerprint-here"  # PBS TLS fingerprint
 # Or find it in PBS web UI: Administration -> Certificates
 #
 PBS_NAMESPACE=""                  # Leave empty for root namespace
+
+# Retention policy
+KEEP_LAST=7        # Keep the 7 most recent snapshots
+KEEP_WEEKLY=4      # Keep 4 weekly snapshots
+KEEP_MONTHLY=3     # Keep 3 monthly snapshots
 
 # -- END CONFIG ----------------------------------------------------------------
 
@@ -199,6 +209,7 @@ log "  Backup ID : $BACKUP_ID"
 PBS_REPO="${PBS_TOKENID}@${PBS_HOST}:${PBS_DATASTORE}"
 
 # proxmox-backup-client reads credentials from PBS_PASSWORD (even for tokens)
+# and the TLS fingerprint from PBS_FINGERPRINT to avoid interactive prompts
 export PBS_PASSWORD="$PBS_TOKEN_SECRET"
 export PBS_FINGERPRINT
 
@@ -215,6 +226,20 @@ proxmox-backup-client backup \
     $NS_FLAG \
     | tee -a "$LOG"
 
+# ------------------------------------------------------------------------------
+log "--- Applying retention policy ---"
+log "  Keep last    : $KEEP_LAST"
+log "  Keep weekly  : $KEEP_WEEKLY"
+log "  Keep monthly : $KEEP_MONTHLY"
+
+proxmox-backup-client prune "host/${BACKUP_ID}" \
+    --repository "$PBS_REPO" \
+    --keep-last "$KEEP_LAST" \
+    --keep-weekly "$KEEP_WEEKLY" \
+    --keep-monthly "$KEEP_MONTHLY" \
+    $NS_FLAG \
+    | tee -a "$LOG"
+
 log "============================================================"
-log "Backup complete"
+log "Backup and prune complete"
 log "============================================================"
