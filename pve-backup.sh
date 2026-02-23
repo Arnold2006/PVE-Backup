@@ -39,8 +39,8 @@
 PBS_HOST="192.168.1.15"           # IP or hostname of your PBS server
 PBS_DATASTORE="Backup1"           # Datastore name on PBS
 PBS_TOKENID="root@pam!Backup"     # API token ID
-PBS_TOKEN_SECRET="74e728a9-381c-4baa-bd75-26001893bbd0"  # API token secret
-PBS_FINGERPRINT="2e:e5:71:a1:89:a4:2c:94:99:2f:8a:ff:2b:37:85:6e:64:ee:33:a8:41:e0:18:48:42:53:bd:e9:bf:05:ba:3f"  # PBS TLS fingerprint
+PBS_TOKEN_SECRET="<TOKEN>"  # API token secret
+PBS_FINGERPRINT="<FINGERPRINT>"  # PBS TLS fingerprint
 #
 # To get your PBS fingerprint, run this on your PBS server:
 #   openssl s_client -connect <pbs-ip>:8007 2>/dev/null | \
